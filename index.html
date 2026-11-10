@@ -143,7 +143,13 @@ function updateComparison(){
  $('compareSaving').textContent=money(monthly);$('yearSaving').textContent=money(monthly*12);
  $('payback').textContent=monthly>0&&price>0?(price/monthly).toFixed(1).replace('.',',')+' meses':(price===0?'Informe o preço':'Sem economia');
 }
-function readHistory(){try{return JSON.parse(localStorage.getItem('contaClaraHistory')||'[]')}catch(e){return []}}
+function readHistory(){
+ try{
+  const stored=JSON.parse(localStorage.getItem('contaClaraHistory')||'[]');
+  if(!Array.isArray(stored))return [];
+  return stored.filter(item=>item&&typeof item.date==='string'&&Number.isFinite(item.kwh)&&item.kwh>=0&&Number.isFinite(item.cost)&&item.cost>=0).slice(-24);
+ }catch(e){return []}
+}
 function renderHistory(){
  const body=$('historyRows'),history=readHistory();body.innerHTML='';
  if(!history.length){body.innerHTML='<tr><td colspan="3" class="empty">Nenhum registro salvo.</td></tr>';return}

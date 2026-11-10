@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Calcule o consumo e o custo estimado de energia dos seus aparelhos. Compare cenários e descubra onde economizar.">
+<title>Conta Clara — Calculadora de consumo, comparação e histórico de energia</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--ink:#18251f;--muted:#617168;--line:#dce6df;--green:#176b4b;--soft:#e8f4ed;--orange:#a65a18}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:900px;margin:0 auto;padding:28px 16px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+.brand{font-weight:800;letter-spacing:-.04em;font-size:1.35rem}.tag{font-size:.78rem;color:var(--green);background:var(--soft);padding:6px 10px;border-radius:999px}
+h1{font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.08;letter-spacing:-.05em;margin:12px 0}
+.lead{color:var(--muted);max-width:650px;margin:0 0 24px}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 20px #183b2410}
+h2{font-size:1.08rem;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:.86rem;font-weight:650;color:#39483f}input{width:100%;margin-top:6px;padding:12px;border:1px solid #cbd8cf;border-radius:10px;font:inherit;color:var(--ink);background:white}
+input:focus{outline:3px solid #b9dfc9;border-color:var(--green)}
+button{border:0;border-radius:10px;padding:11px 15px;font:700 .92rem system-ui;cursor:pointer}
+.primary{background:var(--green);color:white}.secondary{background:var(--soft);color:var(--green)}.remove{background:#fff0e9;color:#98451e;padding:7px 10px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.metric{background:#f7faf8;border:1px solid var(--line);padding:14px;border-radius:13px;min-width:0}
+.metric small{display:block;color:var(--muted);font-size:.78rem}.metric strong{display:block;font-size:clamp(1.15rem,4vw,1.65rem);letter-spacing:-.04em;margin-top:4px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:.78rem}td:last-child,th:last-child{text-align:right}
+.empty{color:var(--muted);padding:12px 0}.note{font-size:.82rem;color:var(--muted)}.bar{height:8px;border-radius:10px;background:#e8eee9;overflow:hidden;margin-top:8px}.bar span{display:block;height:100%;background:#31966b;width:0}
+footer{font-size:.8rem;color:var(--muted);margin-top:24px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.metrics .metric:last-child{grid-column:span 2}.panel{padding:16px}table{font-size:.8rem}th,td{padding:8px 4px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">☀ Conta Clara</div><span class="tag">Gratuito · sem cadastro</span></div>
+  <h1>Para onde vai sua energia?</h1>
+  <p class="lead">Estime o consumo dos aparelhos da sua casa, compare os maiores gastos e teste quanto poderia economizar mudando o tempo de uso.</p>
+  <section class="panel">
+    <h2>1. Configure sua tarifa</h2>
+    <div class="grid">
+      <label>Preço total por kWh (R$)<input id="tariff" type="number" min="0" step="0.01" value="0.90" inputmode="decimal"></label>
+      <label>Dias considerados no mês<input id="days" type="number" min="1" max="31" step="1" value="30" inputmode="numeric"></label>
+    </div>
+    <p class="note">Use o valor total por kWh da sua conta de luz, se disponível. R$ 0,90 é apenas um exemplo editável, não uma tarifa oficial.</p>
+  </section>
+  <section class="panel">
+    <h2>2. Adicione seus aparelhos</h2>
+    <div class="grid">
+      <label>Nome do aparelho<input id="name" maxlength="50" placeholder="Ex.: ventilador"></label>
+      <label>Potência em watts (W)<input id="watts" type="number" min="0.1" step="1" placeholder="Ex.: 100" inputmode="decimal"></label>
+      <label>Horas de uso por dia<input id="hours" type="number" min="0" max="24" step="0.25" placeholder="Ex.: 8" inputmode="decimal"></label>
+      <label>Quantidade<input id="qty" type="number" min="1" max="100" step="1" value="1" inputmode="numeric"></label>
+    </div>
+    <div class="actions"><button class="primary" id="add">Adicionar aparelho</button><button class="secondary" id="examples">Carregar exemplos</button></div>
+    <p class="note">A potência costuma aparecer na etiqueta do aparelho ou no manual. Se estiver em kW, multiplique por 1.000 para converter em W.</p>
+  </section>
+  <section class="panel">
+    <h2>3. Seu resumo estimado</h2>
+    <div class="metrics">
+      <div class="metric"><small>Consumo mensal</small><strong id="totalKwh">0 kWh</strong></div>
+      <div class="metric"><small>Custo mensal</small><strong id="totalCost">R$ 0,00</strong></div>
+      <div class="metric"><small>Custo diário</small><strong id="dailyCost">R$ 0,00</strong></div>
+    </div>
+    <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>Aparelho</th><th>kWh/mês</th><th>Custo/mês</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="4" class="empty">Adicione um aparelho para começar.</td></tr></tbody></table></div>
+  </section>
+  <section class="panel">
+    <h2>5. Vale a pena trocar um aparelho?</h2>
+    <p class="note">Compare o consumo de um aparelho atual com um modelo novo. Informe potências equivalentes e o mesmo tempo de uso.</p>
+    <div class="grid">
+      <label>Potência do aparelho atual (W)<input id="oldWatts" type="number" min="0.1" step="1" value="150" inputmode="decimal"></label>
+      <label>Potência do novo aparelho (W)<input id="newWatts" type="number" min="0.1" step="1" value="90" inputmode="decimal"></label>
+      <label>Horas de uso por dia<input id="compareHours" type="number" min="0" max="24" step="0.25" value="8" inputmode="decimal"></label>
+      <label>Preço do aparelho novo (R$)<input id="newPrice" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+    </div>
+    <div class="metrics" style="margin-top:14px">
+      <div class="metric"><small>Economia mensal estimada</small><strong id="compareSaving">R$ 0,00</strong></div>
+      <div class="metric"><small>Economia anual estimada</small><strong id="yearSaving">R$ 0,00</strong></div>
+      <div class="metric"><small>Retorno simples do preço</small><strong id="payback">—</strong></div>
+    </div>
+    <p class="note" id="compareNote">O retorno considera somente a economia de energia; não inclui manutenção, juros ou variação tarifária.</p>
+  </section>
+  <section class="panel">
+    <h2>6. Histórico salvo neste dispositivo</h2>
+    <p class="note">Salve uma fotografia do seu cálculo para comparar meses. Os dados ficam somente neste navegador.</p>
+    <div class="actions"><button class="primary" id="saveMonth">Salvar este mês</button><button class="secondary" id="clearHistory">Apagar histórico</button></div>
+    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Data</th><th>Consumo</th><th>Custo estimado</th></tr></thead><tbody id="historyRows"><tr><td colspan="3" class="empty">Nenhum registro salvo.</td></tr></tbody></table></div>
+  </section>
+  <section class="panel">
+    <h2>7. Teste uma economia</h2>
+    <div class="grid">
+      <label>Reduzir o uso diário em (horas)<input id="reduce" type="number" min="0" max="24" step="0.5" value="1" inputmode="decimal"></label>
+      <div class="metric"><small>Economia estimada por mês</small><strong id="saving">R$ 0,00</strong><div class="bar"><span id="savingBar"></span></div></div>
+    </div>
+    <p class="note">Simulação simplificada: considera a redução informada em todos os aparelhos, sem ultrapassar as horas de uso cadastradas.</p>
+  </section>
+  <div class="actions"><button class="secondary" id="export">Baixar resumo CSV</button><button class="secondary" id="clear">Limpar aparelhos</button></div>
+  <footer>Estimativa educativa, não substitui a leitura da distribuidora. O valor real pode variar por impostos, bandeiras tarifárias, taxas, horários e hábitos de uso. Seus cálculos acontecem neste dispositivo; esta página não envia os dados a um servidor.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let devices=[];
+const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=id=>Number($(id).value);
+function calc(d){return d.watts/1000*d.hours*num('days')*d.qty}
+function render(){
+ const tariff=Math.max(0,num('tariff')||0),days=Math.max(1,num('days')||30);
+ const rows=$('rows');rows.innerHTML='';
+ let total=0,saved=0;
+ if(!devices.length) rows.innerHTML='<tr><td colspan="4" class="empty">Adicione um aparelho para começar.</td></tr>';
+ devices.forEach((d,i)=>{
+  const kwh=d.watts/1000*d.hours*days*d.qty,cost=kwh*tariff;total+=kwh;
+  const reduction=Math.min(d.hours,Math.max(0,num('reduce')||0));
+  saved+=d.watts/1000*reduction*days*d.qty*tariff;
+  const tr=document.createElement('tr');
+  [d.name,kwh.toFixed(1).replace('.',','),money(cost)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});
+  const td=document.createElement('td'),b=document.createElement('button');b.className='remove';b.textContent='Remover';b.setAttribute('aria-label','Remover '+d.name);b.onclick=()=>{devices.splice(i,1);render()};td.appendChild(b);tr.appendChild(td);rows.appendChild(tr);
+ });
+ $('totalKwh').textContent=total.toFixed(1).replace('.',',')+' kWh';
+ $('totalCost').textContent=money(total*tariff);
+ $('dailyCost').textContent=money(total*tariff/days);
+ $('saving').textContent=money(saved);
+ $('savingBar').style.width=(total*tariff?Math.min(100,saved/(total*tariff)*100):0)+'%';
+}
+$('add').onclick=()=>{
+ const name=$('name').value.trim(),watts=num('watts'),hours=num('hours'),qty=num('qty');
+ if(!name||!Number.isFinite(watts)||watts<=0||!Number.isFinite(hours)||hours<0||hours>24||!Number.isInteger(qty)||qty<1||qty>100){alert('Confira nome, potência, horas (0 a 24) e quantidade (1 a 100).');return}
+ devices.push({name,watts,hours,qty});$('name').value='';$('watts').value='';$('hours').value='';$('qty').value='1';render();
+};
+$('examples').onclick=()=>{devices=[{name:'Ventilador',watts:100,hours:8,qty:1},{name:'Televisão',watts:120,hours:5,qty:1},{name:'Geladeira (média estimada)',watts:60,hours:24,qty:1}];render()};
+$('clear').onclick=()=>{devices=[];render()};
+['tariff','days','reduce'].forEach(id=>$(id).addEventListener('input',render));
+$('export').onclick=()=>{
+ const tariff=Math.max(0,num('tariff')||0);
+ const lines=[['Aparelho','Potência W','Horas/dia','Quantidade','Consumo kWh/mês','Custo estimado R$'],...devices.map(d=>[d.name,d.watts,d.hours,d.qty,calc(d).toFixed(2),(calc(d)*tariff).toFixed(2)])];
+ const csv=lines.map(r=>r.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(';')).join('\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='conta-clara-consumo.csv';a.click();URL.revokeObjectURL(url);
+};
+function updateComparison(){
+ const oldW=Math.max(0,num('oldWatts')||0),newW=Math.max(0,num('newWatts')||0);
+ const hours=Math.min(24,Math.max(0,num('compareHours')||0)),price=Math.max(0,num('newPrice')||0);
+ const tariff=Math.max(0,num('tariff')||0),days=Math.max(1,num('days')||30);
+ const monthly=(oldW-newW)/1000*hours*days*tariff;
+ $('compareSaving').textContent=money(monthly);$('yearSaving').textContent=money(monthly*12);
+ $('payback').textContent=monthly>0&&price>0?(price/monthly).toFixed(1).replace('.',',')+' meses':(price===0?'Informe o preço':'Sem economia');
+}
+function readHistory(){try{return JSON.parse(localStorage.getItem('contaClaraHistory')||'[]')}catch(e){return []}}
+function renderHistory(){
+ const body=$('historyRows'),history=readHistory();body.innerHTML='';
+ if(!history.length){body.innerHTML='<tr><td colspan="3" class="empty">Nenhum registro salvo.</td></tr>';return}
+ history.slice().reverse().forEach(item=>{const tr=document.createElement('tr');[item.date,item.kwh.toFixed(1).replace('.',',')+' kWh',money(item.cost)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});body.appendChild(tr)});
+}
+$('saveMonth').onclick=()=>{
+ const tariff=Math.max(0,num('tariff')||0),days=Math.max(1,num('days')||30);
+ const kwh=devices.reduce((sum,d)=>sum+d.watts/1000*d.hours*days*d.qty,0);
+ if(!devices.length){alert('Adicione pelo menos um aparelho antes de salvar.');return}
+ const history=readHistory(),date=new Date().toLocaleDateString('pt-BR');history.push({date,kwh,cost:kwh*tariff});
+ try{localStorage.setItem('contaClaraHistory',JSON.stringify(history.slice(-24)));renderHistory();alert('Resumo salvo neste dispositivo.')}catch(e){alert('Não foi possível salvar. Verifique o espaço disponível no navegador.')}
+};
+$('clearHistory').onclick=()=>{if(confirm('Apagar todos os registros salvos neste dispositivo?')){localStorage.removeItem('contaClaraHistory');renderHistory()}};
+['oldWatts','newWatts','compareHours','newPrice','tariff','days'].forEach(id=>$(id).addEventListener('input',updateComparison));
+const originalRender=render;render=function(){originalRender();updateComparison()};
+renderHistory();render();
+</script>
+</body>
+</html>

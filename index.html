@@ -111,7 +111,7 @@ function deviceMonthlyKwh(d,days){
 }
 function monthlySavings(oldWatts,newWatts,hours,days,tariff){
  if(![oldWatts,newWatts,hours,days,tariff].every(Number.isFinite))return 0;
- if(oldWatts<0||newWatts<0||hours<0||hours>24||days<1||days>31||tariff<0)return 0;
+ if(oldWatts<=0||newWatts<=0||hours<0||hours>24||days<1||days>31||tariff<0)return 0;
  const result=(oldWatts-newWatts)/1000*hours*days*tariff;
  return Number.isFinite(result)?result:0;
 }
@@ -119,6 +119,11 @@ function csvCell(value){
  const text=String(value);
  const safe=/^[\s\u0000-\u001f]*[=+\-@]/.test(text)?"'"+text:text;
  return '"'+safe.replaceAll('"','""')+'"';
+}
+function simplePaybackMonths(price,monthlySaving){
+ if(!Number.isFinite(price)||!Number.isFinite(monthlySaving)||price<=0||monthlySaving<=0)return null;
+ const months=price/monthlySaving;
+ return Number.isFinite(months)?months:null;
 }
 // END pure calculations
 
@@ -163,12 +168,14 @@ $('export').onclick=()=>{
  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='conta-clara-consumo.csv';a.click();URL.revokeObjectURL(url);
 };
 function updateComparison(){
- const oldW=Math.max(0,num('oldWatts')||0),newW=Math.max(0,num('newWatts')||0);
- const hours=Math.min(24,Math.max(0,num('compareHours')||0)),price=Math.max(0,num('newPrice')||0);
+ const oldW=num('oldWatts'),newW=num('newWatts'),hours=num('compareHours'),price=Math.max(0,num('newPrice')||0);
  const tariff=safeTariff(),days=safeDays();
+ const valid=[$('oldWatts').value,$('newWatts').value,$('compareHours').value].every(value=>value.trim()!=='')&&Number.isFinite(oldW)&&oldW>0&&Number.isFinite(newW)&&newW>0&&Number.isFinite(hours)&&hours>=0&&hours<=24;
+ if(!valid){$('compareSaving').textContent='—';$('yearSaving').textContent='—';$('payback').textContent='Preencha potência e horas';return}
  const monthly=monthlySavings(oldW,newW,hours,days,tariff);
  $('compareSaving').textContent=money(monthly);$('yearSaving').textContent=money(monthly*12);
- $('payback').textContent=monthly>0&&price>0?(price/monthly).toFixed(1).replace('.',',')+' meses':(price===0?'Informe o preço':'Sem economia');
+ const payback=simplePaybackMonths(price,monthly);
+ $('payback').textContent=payback!==null?payback.toFixed(1).replace('.',',')+' meses':(price===0?'Informe o preço':'Sem economia');
 }
 function readHistory(){
  try{

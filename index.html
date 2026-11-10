@@ -98,7 +98,7 @@ const $=id=>document.getElementById(id);
 let devices=[];
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Number($(id).value);
-const safeDays=()=>Math.min(31,Math.max(1,Number.isFinite(num('days'))?num('days'):30));
+const safeDays=()=>{const raw=$('days').value.trim(),value=raw===''?30:Number(raw);return Math.min(31,Math.max(1,Number.isFinite(value)?Math.round(value):30))};
 const safeTariff=()=>Math.max(0,Number.isFinite(num('tariff'))?num('tariff'):0);
 function calc(d){return d.watts/1000*d.hours*safeDays()*d.qty}
 function render(){

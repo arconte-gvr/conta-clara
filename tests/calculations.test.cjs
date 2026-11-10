@@ -43,7 +43,7 @@ test('normaliza tarifa sem aceitar valores negativos ou não finitos', () => {
 test('calcula consumo mensal com potência, horas, dias e quantidade', () => {
   assert.equal(deviceMonthlyKwh({ watts: 100, hours: 8, qty: 2 }, 30), 48);
   assert.equal(deviceMonthlyKwh({ watts: 1000, hours: 24, qty: 1 }, 31), 744);
-  assert.equal(deviceMonthlyKwh({ watts: 60, hours: 24, qty: 1 }, 30), 43.2);
+  assert.ok(Math.abs(deviceMonthlyKwh({ watts: 60, hours: 24, qty: 1 }, 30) - 43.2) < 1e-10);
 });
 
 test('rejeita dados inválidos e resultados não finitos no consumo', () => {

@@ -117,7 +117,7 @@ function monthlySavings(oldWatts,newWatts,hours,days,tariff){
 }
 function csvCell(value){
  const text=String(value);
- const safe=/^[\\s\\u0000-\\u001f]*[=+\\-@]/.test(text)?"'"+text:text;
+ const safe=/^[\s\u0000-\u001f]*[=+\-@]/.test(text)?"'"+text:text;
  return '"'+safe.replaceAll('"','""')+'"';
 }
 // END pure calculations
@@ -159,7 +159,6 @@ $('clear').onclick=()=>{devices=[];render()};
 $('export').onclick=()=>{
  const tariff=safeTariff();
  const lines=[['Aparelho','Potência W','Horas/dia','Quantidade','Consumo kWh/mês','Custo estimado R$'],...devices.map(d=>[d.name,d.watts,d.hours,d.qty,calc(d).toFixed(2),(calc(d)*tariff).toFixed(2)])];
- const csvCell=value=>{const text=String(value),safe=/^[\\s\\u0000-\\u001f]*[=+\\-@]/.test(text)?"'"+text:text;return '"'+safe.replaceAll('"','""')+'"'};
  const csv=lines.map(r=>r.map(csvCell).join(';')).join('\n');
  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='conta-clara-consumo.csv';a.click();URL.revokeObjectURL(url);
 };

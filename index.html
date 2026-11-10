@@ -53,7 +53,7 @@ footer{font-size:.8rem;color:var(--muted);margin-top:24px}
   </section>
   <section class="panel">
     <h2>3. Seu resumo estimado</h2>
-    <div class="metrics">
+    <div class="metrics" aria-live="polite">
       <div class="metric"><small>Consumo mensal</small><strong id="totalKwh">0 kWh</strong></div>
       <div class="metric"><small>Custo mensal</small><strong id="totalCost">R$ 0,00</strong></div>
       <div class="metric"><small>Custo diário</small><strong id="dailyCost">R$ 0,00</strong></div>
@@ -61,7 +61,7 @@ footer{font-size:.8rem;color:var(--muted);margin-top:24px}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>Aparelho</th><th>kWh/mês</th><th>Custo/mês</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="4" class="empty">Adicione um aparelho para começar.</td></tr></tbody></table></div>
   </section>
   <section class="panel">
-    <h2>5. Vale a pena trocar um aparelho?</h2>
+    <h2>4. Vale a pena trocar um aparelho?</h2>
     <p class="note">Compare o consumo de um aparelho atual com um modelo novo. Informe potências equivalentes e o mesmo tempo de uso.</p>
     <div class="grid">
       <label>Potência do aparelho atual (W)<input id="oldWatts" type="number" min="0.1" step="1" value="150" inputmode="decimal"></label>
@@ -77,13 +77,13 @@ footer{font-size:.8rem;color:var(--muted);margin-top:24px}
     <p class="note" id="compareNote">O retorno considera somente a economia de energia; não inclui manutenção, juros ou variação tarifária.</p>
   </section>
   <section class="panel">
-    <h2>6. Histórico salvo neste dispositivo</h2>
+    <h2>5. Histórico salvo neste dispositivo</h2>
     <p class="note">Salve uma fotografia do seu cálculo para comparar meses. Os dados ficam somente neste navegador.</p>
     <div class="actions"><button class="primary" id="saveMonth">Salvar este mês</button><button class="secondary" id="clearHistory">Apagar histórico</button></div>
     <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Data</th><th>Consumo</th><th>Custo estimado</th></tr></thead><tbody id="historyRows"><tr><td colspan="3" class="empty">Nenhum registro salvo.</td></tr></tbody></table></div>
   </section>
   <section class="panel">
-    <h2>7. Teste uma economia</h2>
+    <h2>6. Teste uma economia</h2>
     <div class="grid">
       <label>Reduzir o uso diário em (horas)<input id="reduce" type="number" min="0" max="24" step="0.5" value="1" inputmode="decimal"></label>
       <div class="metric"><small>Economia estimada por mês</small><strong id="saving">R$ 0,00</strong><div class="bar"><span id="savingBar"></span></div></div>
@@ -94,22 +94,50 @@ footer{font-size:.8rem;color:var(--muted);margin-top:24px}
   <footer>Estimativa educativa, não substitui a leitura da distribuidora. O valor real pode variar por impostos, bandeiras tarifárias, taxas, horários e hábitos de uso. Seus cálculos acontecem neste dispositivo; esta página não envia os dados a um servidor.</footer>
 </main>
 <script>
+// BEGIN pure calculations — kept independent for automated tests
+function normalizeDays(raw){
+ const value=String(raw??'').trim()===''?30:Number(raw);
+ return Math.min(31,Math.max(1,Number.isFinite(value)?Math.round(value):30));
+}
+function normalizeTariff(raw){
+ const value=String(raw??'').trim()===''?0:Number(raw);
+ return Math.max(0,Number.isFinite(value)?value:0);
+}
+function deviceMonthlyKwh(d,days){
+ if(!d||![d.watts,d.hours,d.qty,days].every(Number.isFinite))return 0;
+ if(d.watts<=0||d.hours<0||d.hours>24||!Number.isInteger(d.qty)||d.qty<1||d.qty>100||days<1||days>31)return 0;
+ const result=d.watts/1000*d.hours*days*d.qty;
+ return Number.isFinite(result)?result:0;
+}
+function monthlySavings(oldWatts,newWatts,hours,days,tariff){
+ if(![oldWatts,newWatts,hours,days,tariff].every(Number.isFinite))return 0;
+ if(oldWatts<0||newWatts<0||hours<0||hours>24||days<1||days>31||tariff<0)return 0;
+ const result=(oldWatts-newWatts)/1000*hours*days*tariff;
+ return Number.isFinite(result)?result:0;
+}
+function csvCell(value){
+ const text=String(value);
+ const safe=/^[\\s\\u0000-\\u001f]*[=+\\-@]/.test(text)?"'"+text:text;
+ return '"'+safe.replaceAll('"','""')+'"';
+}
+// END pure calculations
+
 const $=id=>document.getElementById(id);
 let devices=[];
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Number($(id).value);
-const safeDays=()=>{const raw=$('days').value.trim(),value=raw===''?30:Number(raw);return Math.min(31,Math.max(1,Number.isFinite(value)?Math.round(value):30))};
-const safeTariff=()=>Math.max(0,Number.isFinite(num('tariff'))?num('tariff'):0);
-function calc(d){return d.watts/1000*d.hours*safeDays()*d.qty}
+const safeDays=()=>normalizeDays($('days').value);
+const safeTariff=()=>normalizeTariff($('tariff').value);
+function calc(d){return deviceMonthlyKwh(d,safeDays())}
 function render(){
  const tariff=safeTariff(),days=safeDays();
  const rows=$('rows');rows.innerHTML='';
  let total=0,saved=0;
  if(!devices.length) rows.innerHTML='<tr><td colspan="4" class="empty">Adicione um aparelho para começar.</td></tr>';
  devices.forEach((d,i)=>{
-  const kwh=d.watts/1000*d.hours*days*d.qty,cost=kwh*tariff;total+=kwh;
+  const kwh=calc(d),cost=kwh*tariff;total+=kwh;
   const reduction=Math.min(d.hours,Math.max(0,num('reduce')||0));
-  saved+=d.watts/1000*reduction*days*d.qty*tariff;
+  saved+=deviceMonthlyKwh({...d,hours:reduction},days)*tariff;
   const tr=document.createElement('tr');
   [d.name,kwh.toFixed(1).replace('.',','),money(cost)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});
   const td=document.createElement('td'),b=document.createElement('button');b.className='remove';b.textContent='Remover';b.setAttribute('aria-label','Remover '+d.name);b.onclick=()=>{devices.splice(i,1);render()};td.appendChild(b);tr.appendChild(td);rows.appendChild(tr);
@@ -139,7 +167,7 @@ function updateComparison(){
  const oldW=Math.max(0,num('oldWatts')||0),newW=Math.max(0,num('newWatts')||0);
  const hours=Math.min(24,Math.max(0,num('compareHours')||0)),price=Math.max(0,num('newPrice')||0);
  const tariff=safeTariff(),days=safeDays();
- const monthly=(oldW-newW)/1000*hours*days*tariff;
+ const monthly=monthlySavings(oldW,newW,hours,days,tariff);
  $('compareSaving').textContent=money(monthly);$('yearSaving').textContent=money(monthly*12);
  $('payback').textContent=monthly>0&&price>0?(price/monthly).toFixed(1).replace('.',',')+' meses':(price===0?'Informe o preço':'Sem economia');
 }

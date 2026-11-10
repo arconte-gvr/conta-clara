@@ -1,36 +1,43 @@
-# Conta Clara — pacote para publicação
+# Conta Clara
 
-## Conteúdo
-- `index.html`: aplicação estática.
-- `robots.txt`: permite rastreamento público por mecanismos de busca.
+Calculadora estática e gratuita para estimar consumo residencial de energia, custo, economia e retorno simples de troca de aparelhos.
 
-## Publicação recomendada: Cloudflare Pages com Git
-Escolhemos integração Git porque o objetivo futuro é permitir que alterações revisadas no repositório sejam publicadas automaticamente. **Atenção:** a documentação da Cloudflare informa que um projeto criado por Direct Upload não pode ser convertido depois para Git integration; se escolher Direct Upload, será necessário criar outro projeto para mudar de estratégia.
+## O que a aplicação faz
+- Estima kWh e custo mensal a partir de potência, horas de uso, quantidade, dias e tarifa informados.
+- Compara o consumo de dois aparelhos e calcula economia estimada e retorno simples.
+- Simula redução de horas de uso.
+- Salva até 24 registros no armazenamento local do navegador.
+- Exporta os aparelhos cadastrados em CSV.
 
-1. Crie um repositório no GitHub e envie estes arquivos para a raiz.
-2. Entre no painel Cloudflare e abra Workers & Pages.
-3. Crie uma aplicação Pages conectada ao GitHub.
-4. Selecione o repositório `conta-clara`.
-5. Como é um site estático sem etapa de compilação, deixe o comando de build vazio.
-6. Defina o diretório de saída como `/` ou `.` conforme o painel aceitar.
-7. Conclua o deploy e teste a URL `*.pages.dev` fornecida.
+## Executar os testes
+Requer Node.js 20 ou superior. Não é necessário instalar dependências.
 
-## Custos e limites
-O Cloudflare Pages oferece plano Free, sujeito a limites publicados pela Cloudflare. Entre os limites documentados estão até 500 builds por mês, 20.000 arquivos por site e tamanho máximo de 25 MiB por arquivo. Confira a documentação antes de crescer o projeto:
-https://developers.cloudflare.com/pages/platform/limits/
+```bash
+node --test
+```
 
-Guia de integração Git:
-https://developers.cloudflare.com/pages/configuration/git-integration/
+Os testes verificam a sintaxe do JavaScript da aplicação, normalização de dias e tarifa, consumo mensal, economia e proteção contra fórmulas em células CSV. O GitHub Actions executa a mesma suíte em atualizações do branch `main` e em pull requests.
 
-## Antes de monetizar
-- Não inserir anúncios até existir tráfego e aprovação na plataforma de monetização.
-- Não inventar tarifa de energia ou prometer economia garantida.
-- Explicar que a estimativa depende da potência, tempo de uso e tarifa informados.
-- Revisar privacidade, acessibilidade e precisão dos cálculos.
-- Não coletar dados pessoais sem necessidade e sem aviso adequado.
+## Publicação
+Versão pública: https://conta-clara.guilhermevross.workers.dev
 
-## Limitações atuais
-- Não há backend nem sincronização entre dispositivos.
-- O histórico usa armazenamento local do navegador.
-- Não há agente autônomo conectado ao repositório.
-- Publicação e configuração de contas ainda exigem ação e autorização humanas.
+A hospedagem atual é um **Cloudflare Worker com Static Assets**. Este repositório não contém configuração Wrangler nem fluxo de publicação automática. Portanto:
+- Não siga instruções antigas de Cloudflare Pages como se fossem o procedimento atual.
+- Não presuma que um commit no GitHub atualiza o site público.
+- Faça publicação somente usando a configuração e a conta Cloudflare já autorizadas pelo responsável.
+- Não altere domínio, hospedagem, permissões, segredos ou integrações sem aprovação específica.
+
+## Privacidade e limitações
+- Não há backend, contas ou sincronização entre dispositivos.
+- O histórico fica no armazenamento local deste navegador e pode ser apagado pelo usuário.
+- Os cálculos são estimativas educativas; o valor real da fatura pode incluir impostos, bandeiras, taxas e condições que não estão modeladas.
+- A tarifa padrão de R$ 0,90/kWh é apenas um exemplo editável, não uma tarifa oficial.
+- A página não envia os dados dos aparelhos a um servidor.
+- Não há anúncios, rastreamento ou coleta analítica.
+
+## Princípios para manutenção
+- Preservar custo zero, arquitetura estática, privacidade local e compatibilidade móvel.
+- Corrigir bugs reproduzíveis antes de adicionar funcionalidades.
+- Manter os testes atualizados e executar `node --test` antes de concluir mudanças.
+- Distinguir testes automatizados, inspeção estática, testes reais em navegador e confirmação de publicação.
+- Não prometer economia garantida nem inventar tarifas ou estatísticas.

@@ -19,10 +19,10 @@ assert.ok(start >= 0 && end > start, 'bloco de cálculos puros deve existir');
 const pureSource = script.slice(start, end + '// END pure calculations'.length);
 const sandbox = { module: { exports: {} } };
 vm.runInNewContext(
-  pureSource + '\nmodule.exports = { normalizeDays, normalizeTariff, deviceMonthlyKwh, monthlySavings, csvCell };',
+  pureSource + '\nmodule.exports = { normalizeDays, normalizeTariff, deviceMonthlyKwh, monthlySavings, simplePaybackMonths, csvCell };',
   sandbox
 );
-const { normalizeDays, normalizeTariff, deviceMonthlyKwh, monthlySavings, csvCell } = sandbox.module.exports;
+const { normalizeDays, normalizeTariff, deviceMonthlyKwh, monthlySavings, simplePaybackMonths, csvCell } = sandbox.module.exports;
 
 test('normaliza dias vazios, inválidos e fora dos limites', () => {
   assert.equal(normalizeDays(''), 30);
@@ -58,7 +58,14 @@ test('calcula economia mensal e representa corretamente a ausência de economia'
   assert.ok(Math.abs(monthlySavings(150, 90, 8, 30, 0.9) - 12.96) < 1e-10);
   assert.ok(Math.abs(monthlySavings(90, 150, 8, 30, 0.9) + 12.96) < 1e-10);
   assert.equal(monthlySavings(100, 90, 25, 30, 0.9), 0);
-  assert.equal(monthlySavings(100, 90, 8, 30, -1), 0);
+  assert.equal(monthlySavings(100, 90, 8, 30, -1), 0);\n  assert.equal(monthlySavings(0, 90, 8, 30, 0.9), 0);
+});
+
+test('calcula retorno simples somente quando existe economia e preço válido', () => {
+  assert.ok(Math.abs(simplePaybackMonths(600, 30) - 20) < 1e-10);
+  assert.equal(simplePaybackMonths(0, 30), null);
+  assert.equal(simplePaybackMonths(600, 0), null);
+  assert.equal(simplePaybackMonths(600, -5), null);
 });
 
 test('protege células CSV contra fórmulas após espaços e controles', () => {

@@ -65,7 +65,7 @@ test('protege células CSV contra fórmulas após espaços e controles', () => {
   assert.equal(csvCell('Ventilador'), '"Ventilador"');
   assert.equal(csvCell('=1+1'), '"\'=1+1"');
   assert.equal(csvCell('   @SUM(A1:A2)'), '"\'   @SUM(A1:A2)"');
-  assert.equal(csvCell('\t-2'), '"\'\\t-2"');
+  assert.equal(csvCell('\t-2'), '"\\'\\t-2"');
 });
 
 test('escapa aspas e mantém separadores dentro de células CSV', () => {

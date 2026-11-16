@@ -58,7 +58,8 @@ test('calcula economia mensal e representa corretamente a ausência de economia'
   assert.ok(Math.abs(monthlySavings(150, 90, 8, 30, 0.9) - 12.96) < 1e-10);
   assert.ok(Math.abs(monthlySavings(90, 150, 8, 30, 0.9) + 12.96) < 1e-10);
   assert.equal(monthlySavings(100, 90, 25, 30, 0.9), 0);
-  assert.equal(monthlySavings(100, 90, 8, 30, -1), 0);\n  assert.equal(monthlySavings(0, 90, 8, 30, 0.9), 0);
+  assert.equal(monthlySavings(100, 90, 8, 30, -1), 0);
+  assert.equal(monthlySavings(0, 90, 8, 30, 0.9), 0);
 });
 
 test('calcula retorno simples somente quando existe economia e preço válido', () => {

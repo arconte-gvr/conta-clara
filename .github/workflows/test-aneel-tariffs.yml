@@ -9,7 +9,7 @@ on:
       - 'data/**'
       - '.github/workflows/**'
   push:
-    branches: [main]
+    branches: ['**']
     paths:
       - 'index.html'
       - 'scripts/**'

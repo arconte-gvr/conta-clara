@@ -1,0 +1,35 @@
+name: Atualizar tarifas residenciais ANEEL
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-tariffs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validar e gerar tarifas
+        run: node scripts/update-aneel-tariffs.mjs
+      - name: Executar testes da importação
+        run: node --test tests/aneel-tariffs.test.mjs
+      - name: Salvar atualização no repositório
+        run: |
+          if git diff --quiet -- data/tarifas.json; then
+            echo "Nenhuma alteração nas tarifas."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/tarifas.json
+          git commit -m "Atualiza tarifas residenciais ANEEL"
+          git push

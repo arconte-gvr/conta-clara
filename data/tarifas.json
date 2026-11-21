@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "referenceDate": null,
+  "sourceRecordCount": 0,
+  "distributorCount": 0,
+  "source": "https://dadosabertos.aneel.gov.br/dataset/tarifas-distribuidoras-energia-eletrica",
+  "license": "ODbL-1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "attribution": "Fonte: ANEEL — Tarifas de aplicação das distribuidoras de energia elétrica. Base derivada sob ODbL 1.0.",
+  "notice": "Tarifa homologada de referência (TE + TUSD), sem tributos, bandeiras tarifárias, iluminação pública ou outros itens da fatura. Não representa o valor final cobrado.",
+  "tariffs": []
+}

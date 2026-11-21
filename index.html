@@ -13,7 +13,7 @@ main{max-width:900px;margin:0 auto;padding:28px 16px 60px}.top{display:flex;alig
 h1{font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.08;letter-spacing:-.05em;margin:12px 0}
 .lead{color:var(--muted);max-width:650px;margin:0 0 24px}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 20px #183b2410}
 h2{font-size:1.08rem;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-label{display:block;font-size:.86rem;font-weight:650;color:#39483f}input{width:100%;margin-top:6px;padding:12px;border:1px solid #cbd8cf;border-radius:10px;font:inherit;color:var(--ink);background:white}
+label{display:block;font-size:.86rem;font-weight:650;color:#39483f}input,select{width:100%;margin-top:6px;padding:12px;border:1px solid #cbd8cf;border-radius:10px;font:inherit;color:var(--ink);background:white}
 input:focus{outline:3px solid #b9dfc9;border-color:var(--green)}
 button{border:0;border-radius:10px;padding:11px 15px;font:700 .92rem system-ui;cursor:pointer}
 .primary{background:var(--green);color:white}.secondary{background:var(--soft);color:var(--green)}.remove{background:#fff0e9;color:#98451e;padding:7px 10px}
@@ -38,7 +38,13 @@ footer{font-size:.8rem;color:var(--muted);margin-top:24px}
       <label>Preço total por kWh (R$)<input id="tariff" type="number" min="0" step="0.01" value="0.90" inputmode="decimal"></label>
       <label>Dias considerados no mês<input id="days" type="number" min="1" max="31" step="1" value="30" inputmode="numeric"></label>
     </div>
-    <p class="note">Use o valor total por kWh da sua conta de luz, se disponível. R$ 0,90 é apenas um exemplo editável, não uma tarifa oficial.</p>
+    <div style="margin-top:12px">
+      <label>Tarifa de referência da distribuidora (opcional)
+        <select id="utility"><option value="">Usar tarifa manual</option></select>
+      </label>
+      <p class="note" id="tariffStatus" aria-live="polite">Carregando referências oficiais, quando disponíveis…</p>
+    </div>
+    <p class="note">Você pode informar o valor total por kWh da sua conta. R$ 0,90 é apenas um exemplo editável. A referência ANEEL soma TE + TUSD, sem todos os itens da fatura; confira a ressalva antes de usar.</p>
   </section>
   <section class="panel">
     <h2>2. Adicione seus aparelhos</h2>
@@ -127,7 +133,58 @@ function simplePaybackMonths(price,monthlySaving){
 }
 // END pure calculations
 
+
 const $=id=>document.getElementById(id);
+async function loadAneelTariffs(){
+ const status=$('tariffStatus'),select=$('utility');
+ try{
+  const response=await fetch('./data/tarifas.json',{cache:'no-store'});
+  if(!response.ok)throw new Error('Arquivo de tarifas indisponível');
+  const data=await response.json();
+  const generated=Date.parse(data.generatedAt||'');
+  const age=Date.now()-generated;
+  if(data.schemaVersion!==1||!Array.isArray(data.tariffs)||!data.tariffs.length||
+     !Number.isFinite(generated)||age< -300000||age>14*24*60*60*1000){
+    throw new Error('Referência ausente ou desatualizada');
+  }
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+  const valid=data.tariffs.filter(item=>item&&/^\d{14}$/.test(item.id||'')&&
+    Number.isFinite(item.rateKwh)&&item.rateKwh>=0.1&&item.rateKwh<=4&&
+    typeof item.startDate==='string'&&item.startDate<=today&&
+    (!item.endDate||item.endDate>=today));
+  if(!valid.length)throw new Error('Nenhuma tarifa vigente encontrada');
+  valid.forEach(item=>{
+   const option=document.createElement('option');
+   option.value=item.id;
+   option.textContent=(item.sigla||'Distribuidora sem sigla')+' · CNPJ '+item.cnpj;
+   option.dataset.rate=String(item.rateKwh);
+   option.dataset.start=item.startDate;
+   option.dataset.end=item.endDate||'';
+   select.appendChild(option);
+  });
+  status.textContent='Referências ANEEL · data-base '+data.referenceDate+
+    ' · '+valid.length+' distribuidoras. '+data.notice+
+    ' Fonte: ANEEL (ODbL 1.0).';
+ }catch(error){
+  select.disabled=true;
+  status.textContent='Tarifa automática indisponível ou vencida. Você pode continuar usando o campo manual acima.';
+ }
+}
+$('utility').addEventListener('change',()=>{
+ const option=$('utility').selectedOptions[0];
+ if(!option||!option.value)return;
+ $('tariff').value=Number(option.dataset.rate).toFixed(5);
+ $('tariffStatus').textContent='Tarifa homologada ANEEL selecionada (TE + TUSD). Não inclui todos os itens da fatura; você pode editar o campo manualmente.';
+ render();
+});
+$('tariff').addEventListener('input',()=>{
+ if($('utility').value){
+  $('utility').value='';
+  $('tariffStatus').textContent='Valor manual editado. A seleção de referência foi desmarcada.';
+ }
+});
+
+
 let devices=[];
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Number($(id).value);
@@ -199,7 +256,7 @@ $('saveMonth').onclick=()=>{
 $('clearHistory').onclick=()=>{if(confirm('Apagar todos os registros salvos neste dispositivo?')){localStorage.removeItem('contaClaraHistory');renderHistory()}};
 ['oldWatts','newWatts','compareHours','newPrice','tariff','days'].forEach(id=>$(id).addEventListener('input',updateComparison));
 const originalRender=render;render=function(){originalRender();updateComparison()};
-renderHistory();render();
+renderHistory();render();loadAneelTariffs();
 </script>
 </body>
 </html>

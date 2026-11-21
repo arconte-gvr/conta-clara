@@ -29,8 +29,11 @@ export function parseDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
 }
 function rehNumber(value) {
-  const digits = String(value ?? '').match(/\d+/g);
-  return digits ? Number(digits.join('')) : 0;
+  const text = String(value ?? '');
+  const firstNumber = text.match(/\d[\d.]*/);
+  const year = text.match(/\b20\d{2}\b/);
+  const number = firstNumber ? Number(firstNumber[0].replace(/\./g, '')) : 0;
+  return (year ? Number(year[0]) : 0) * 1_000_000_000 + number;
 }
 function isNoPost(value) {
   const v = String(value ?? '').trim().toLocaleLowerCase('pt-BR');

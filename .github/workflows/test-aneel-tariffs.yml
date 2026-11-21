@@ -1,0 +1,36 @@
+name: Testes da referência tarifária ANEEL
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'data/**'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'data/**'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validar sintaxe da calculadora
+        run: |
+          sed -n '/<script>/,/<\/script>/p' index.html | sed '1d;$d' > /tmp/conta-clara.js
+          node --check /tmp/conta-clara.js
+      - name: Testar importador ANEEL
+        run: node --test tests/aneel-tariffs.test.mjs

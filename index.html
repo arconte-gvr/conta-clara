@@ -134,6 +134,7 @@ function simplePaybackMonths(price,monthlySaving){
 // END pure calculations
 
 
+const $=id=>document.getElementById(id);
 async function loadAneelTariffs(){
  const status=$('tariffStatus'),select=$('utility');
  try{
@@ -183,7 +184,7 @@ $('tariff').addEventListener('input',()=>{
  }
 });
 
-const $=id=>document.getElementById(id);
+
 let devices=[];
 const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Number($(id).value);

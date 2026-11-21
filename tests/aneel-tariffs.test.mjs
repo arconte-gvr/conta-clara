@@ -42,7 +42,7 @@ test('rejects expired, SCEE, time-of-use and non-energy-unit records',()=>{
   assert.equal(normalizeRecord(row({DscUnidadeTerciaria:'R$/kW'}),today),null);
 });
 test('uses the latest homologation for overlapping records',()=>{
-  const rows=manyRows(); rows.push(row({DscREH:'REH 999',VlrTUSD:'600,00'}));
+  const rows=manyRows(); rows.push({...rows[0],DscREH:'REH 999',VlrTUSD:'600,00'});
   const selected=selectCurrentTariffs(rows,today);
   assert.equal(selected.length,80);
   assert.equal(selected.find(item=>item.id==='12345678000190').tusdMwh,600);
@@ -51,7 +51,7 @@ test('rejects a previously published distributor disappearing silently',()=>{
   assert.throws(()=>selectCurrentTariffs(manyRows(),today,['99999999000199']),/desapareceram/);
 });
 test('rejects conflicting duplicate without a later homologation number',()=>{
-  const rows=manyRows(); rows.push(row({VlrTUSD:'700,00'}));
+  const rows=manyRows(); rows.push({...rows[0],VlrTUSD:'700,00'});
   assert.throws(()=>selectCurrentTariffs(rows,today),/Conflito/);
 });
 test('dataset includes attribution, ODbL and tariff caveat',()=>{
